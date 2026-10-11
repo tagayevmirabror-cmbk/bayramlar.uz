@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bayramlar.uz - O'zbekistondagi #1 Mini App</title>
+
+    <!-- Tailwind CSS & Lucide Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Yandex Maps API -->
+    <script src="https://api-maps.yandex.ru/2.1/?lang=uz_UZ&apikey=YOUR_YANDEX_API_KEY" type="text/javascript"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Glassmorphism Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        /* Animatsiyalar */
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+        .animate-glow { animation: pulseGlow 3s infinite ease-in-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Hide scrollbars */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased pb-24 selection:bg-indigo-500 selection:text-white">
+
+    <!-- 1. SPLASH SCREEN (Kirish sahifasi animatsiyasi) -->
+    <div id="splashScreen" class="fixed inset-0 z-[100] bg-gradient-to-tr from-indigo-700 via-indigo-600 to-purple-600 flex flex-col items-center justify-center transition-opacity duration-700">
+        <div class="relative flex flex-col items-center text-center p-6">
+            <div class="w-24 h-24 bg-white/10 rounded-3xl backdrop-blur-xl flex items-center justify-center border border-white/20 shadow-2xl mb-6 animate-glow">
+                <i data-lucide="party-popper" class="w-12 h-12 text-amber-300"></i>
+            </div>
+            <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">Bayramlar.uz</h1>
+            <p class="text-indigo-200 text-sm max-w-xs font-medium">Barcha bayramlar va tadbirlar bir joyda!</p>
+            
+            <div class="mt-12 flex items-center space-x-2">
+                <div class="w-3 h-3 bg-amber-400 rounded-full animate-bounce"></div>
+                <div class="w-3 h-3 bg-amber-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div class="w-3 h-3 bg-amber-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER / PROFIL BAR -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-200/60 px-4 py-3 shadow-sm">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 leading-tight">Bayramlar.uz</h2>
+                    <span id="userInfo" class="text-xs font-semibold text-indigo-600">Tekshirilmoqda...</span>
+                </div>
+            </div>
+            
+            <!-- Admin button -->
+            <button onclick="openAdminModal()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 pt-4 space-y-6">
+
+        <!-- BANNER SLIDER (Reklama va Fayllar uchun) -->
+        <section class="relative overflow-hidden rounded-2xl shadow-lg border border-slate-200/50 group">
+            <div id="bannerContainer" class="flex transition-transform duration-500 ease-out">
+                <!-- JavaScript orqali bannerlar yuklanadi -->
+            </div>
+            <!-- Slider Dots -->
+            <div id="bannerDots" class="absolute bottom-3 left-0 right-0 flex justify-center space-x-1.5 z-10"></div>
+        </section>
+
+        <!-- QIDIRUV VA TABLAR -->
+        <div class="space-y-3">
+            <div class="relative">
+                <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-3 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="filterAds()" placeholder="E'lonlarni qidirish..." class="w-full pl-11 pr-4 py-2.5 bg-white rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+            </div>
+
+            <div class="flex p-1 bg-slate-200/70 rounded-xl">
+                <button onclick="switchTab('feed')" id="tabFeed" class="flex-1 py-2 text-xs font-bold rounded-lg bg-white text-indigo-600 shadow-sm transition">Barcha E'lonlar</button>
+                <button onclick="switchTab('add')" id="tabAdd" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 transition">+ E'lon Joylash</button>
+            </div>
+        </div>
+
+        <!-- 1. E'LONLAR LENTASI -->
+        <section id="sectionFeed" class="space-y-4">
+            <div id="adsList" class="space-y-4">
+                <!-- JavaScript orqali e'lonlar kartalari chiqariladi -->
+            </div>
+        </section>
+
+        <!-- 2. E'LON QO'SHISH FORMASI -->
+        <section id="sectionAdd" class="space-y-4 hidden animate-fade-in">
+            <form id="adForm" onsubmit="submitAd(event)" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-md space-y-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i> Yangi Bayram Joylash
+                </h3>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">E'lon sarlavhasi</label>
+                    <input type="text" id="adTitle" required placeholder="Masalan: Yangi Yil Archasi Bayram Tantanasi" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tavsifi & Vaqti</label>
+                    <textarea id="adDesc" required rows="3" placeholder="Barcha ma'lumotlarni yozing..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Aloqa Telefon Nomeri</label>
+                    <input type="tel" id="adPhone" required placeholder="+998 90 123 45 67" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Yandex Xaritasidan Lokatsiyani Belgilang:</label>
+                    <div id="map" class="w-full h-56 rounded-xl border border-slate-200 overflow-hidden shadow-inner"></div>
+                    <p id="selectedCoordText" class="text-xs text-indigo-600 mt-1 font-medium">Xaritaga bosing va joyni belgilang...</p>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-500/30 transition transform active:scale-95">
+                    E'lonni Darhol E'lon Qilish
+                </button>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- ADMIN MODAL & PANEL -->
+    <div id="adminModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-fade-in relative">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <!-- Admin Parol Tekshiruvi -->
+            <div id="adminAuthSection" class="space-y-4">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                        <i data-lucide="lock" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">Admin Panelga Kirish</h3>
+                    <p class="text-xs text-slate-500">Boshqaruv uchun parolni kiriting (Standart: admin123)</p>
+                </div>
+                <input type="password" id="adminPassInput" placeholder="Parolni kiriting..." class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                <button onclick="verifyAdmin()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition">Kirish</button>
+            </div>
+
+            <!-- Admin Boshqaruv Paneli -->
+            <div id="adminDashboard" class="hidden space-y-5">
+                <div class="flex items-center justify-between border-b pb-3">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="shield" class="w-5 h-5 text-indigo-600"></i> Admin Boshqaruvi
+                    </h3>
+                    <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">FAOL</span>
+                </div>
+
+                <!-- Banner Qo'shish -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">Yangi Banner/Rasm Qo'shish (URL)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="newBannerUrl" placeholder="https://.../banner.jpg" class="flex-1 px-3 py-2 text-xs border rounded-lg outline-none">
+                        <button onclick="addBanner()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-bold">Qo'shish</button>
+                    </div>
+                </div>
+
+                <!-- Statistika -->
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <div class="bg-indigo-50 p-3 rounded-xl">
+                        <div id="statAdsCount" class="text-lg font-extrabold text-indigo-600">0</div>
+                        <div class="text-[10px] text-slate-500 font-bold uppercase">E'lonlar</div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-xl">
+                        <div id="statBannersCount" class="text-lg font-extrabold text-purple-600">0</div>
+                        <div class="text-[10px] text-slate-500 font-bold uppercase">Bannerlar</div>
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-500 text-center">
+                    Admin paneldan siz e'lonlarni o'chirishingiz hamda banner reklama rasmlarini yangilashingiz mumkin.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        let tg = window.Telegram.WebApp;
+        let currentUser = null;
+        let isAdmin = false;
+        let selectedCoords = [41.2995, 69.2401];
+        let myMap = null, myPlacemark = null;
+
+        // Boshlang'ich Bannerlar
+        let defaultBanners = [
+            { id: 1, image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80", title: "Eng Katta Bayramlar Bayramlar.uz da!" },
+            { id: 2, image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80", title: "O'z E'loningizni Bevaqt Joylang" }
+        ];
+
+        // 1. Splash Screen va Telegram Auth
+        window.onload = () => {
+            lucide.createIcons();
+            
+            // Splash animation
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                splash.classList.add('opacity-0');
+                setTimeout(() => splash.remove(), 700);
+            }, 2500);
+
+            initTelegramAuth();
+            renderBanners();
+            loadAds();
+        };
+
+        function initTelegramAuth() {
+            tg.ready();
+            tg.expand();
+            const user = tg.initDataUnsafe?.user;
+
+            if (user) {
+                currentUser = {
+                    id: user.id,
+                    name: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
+                    username: user.username ? '@' + user.username : 'ID: ' + user.id
+                };
+                document.getElementById('userInfo').innerText = currentUser.name;
+            } else {
+                currentUser = { id: 777, name: "Toshkent Mehmoni", username: "@mehmon" };
+                document.getElementById('userInfo').innerText = "Mehmon (Demo Mode)";
+            }
+        }
+
+        // 2. Banner Slider Logic
+        function renderBanners() {
+            let banners = JSON.parse(localStorage.getItem('bayramlar_banners')) || defaultBanners;
+            const container = document.getElementById('bannerContainer');
+            const dots = document.getElementById('bannerDots');
+
+            container.innerHTML = banners.map(b => `
+                <div class="min-w-full relative h-40 bg-slate-900 flex-shrink-0">
+                    <img src="${b.image}" class="w-full h-full object-cover opacity-80" alt="Banner">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-4">
+                        <p class="text-white font-bold text-sm leading-snug">${b.title}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            dots.innerHTML = banners.map((_, i) => `
+                <div class="w-2 h-2 rounded-full ${i === 0 ? 'bg-white w-5' : 'bg-white/50'} transition-all duration-300"></div>
+            `).join('');
+
+            document.getElementById('statBannersCount').innerText = banners.length;
+        }
+
+        // 3. Tablar o'rtasida o'tish
+        function switchTab(tab) {
+            const feedTab = document.getElementById('sectionFeed');
+            const addTab = document.getElementById('sectionAdd');
+            const btnFeed = document.getElementById('tabFeed');
+            const btnAdd = document.getElementById('tabAdd');
+
+            if (tab === 'feed') {
+                feedTab.classList.remove('hidden');
+                addTab.classList.add('hidden');
+                btnFeed.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-indigo-600 shadow-sm transition";
+                btnAdd.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 transition";
+                loadAds();
+            } else {
+                feedTab.classList.add('hidden');
+                addTab.classList.remove('hidden');
+                btnAdd.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-indigo-600 shadow-sm transition";
+                btnFeed.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 transition";
+                
+                setTimeout(() => { if (!myMap) initYandexMap(); }, 200);
+            }
+        }
+
+        // 4. Yandex Maps
+        function initYandexMap() {
+            ymaps.ready(() => {
+                myMap = new ymaps.Map("map", { center: [41.2995, 69.2401], zoom: 12 });
+                myMap.events.add('click', function (e) {
+                    var coords = e.get('coords');
+                    selectedCoords = coords;
+                    if (myPlacemark) {
+                        myPlacemark.geometry.setCoordinates(coords);
+                    } else {
+                        myPlacemark = new ymaps.Placemark(coords, {}, { preset: 'islands#violetDotIcon' });
+                        myMap.geoObjects.add(myPlacemark);
+                    }
+                    document.getElementById('selectedCoordText').innerText = `Tanlandi: ${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}`;
+                });
+            });
+        }
+
+        // 5. E'lonni Saqlash
+        function submitAd(event) {
+            event.preventDefault();
+            const newAd = {
+                id: Date.now(),
+                author: currentUser.name,
+                username: currentUser.username,
+                title: document.getElementById('adTitle').value,
+                desc: document.getElementById('adDesc').value,
+                phone: document.getElementById('adPhone').value,
+                coords: selectedCoords,
+                date: new Date().toLocaleDateString('uz-UZ')
+            };
+
+            let ads = JSON.parse(localStorage.getItem('bayramlar_ads')) || [];
+            ads.unshift(newAd);
+            localStorage.setItem('bayramlar_ads', JSON.stringify(ads));
+
+            alert("E'loningiz Muvaffaqiyatli Qo'shildi!");
+            document.getElementById('adForm').reset();
+            switchTab('feed');
+        }
+
+        // 6. E'lonlarni Yuklash va Filterlash
+        function loadAds(filterText = '') {
+            const adsList = document.getElementById('adsList');
+            let ads = JSON.parse(localStorage.getItem('bayramlar_ads')) || [];
+
+            document.getElementById('statAdsCount').innerText = ads.length;
+
+            if (filterText) {
+                ads = ads.filter(a => a.title.toLowerCase().includes(filterText.toLowerCase()) || a.desc.toLowerCase().includes(filterText.toLowerCase()));
+            }
+
+            if (ads.length === 0) {
+                adsList.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-6">
+                        <i data-lucide="calendar-x" class="w-12 h-12 mx-auto text-slate-300 mb-2"></i>
+                        <p class="text-slate-500 font-medium text-sm">Hozircha e'lonlar topilmadi...</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            adsList.innerHTML = ads.map(ad => `
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-3 animate-fade-in relative">
+                    ${isAdmin ? `<button onclick="deleteAd(${ad.id})" class="absolute top-4 right-4 bg-red-50 text-red-500 p-1.5 rounded-lg hover:bg-red-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    
+                    <div class="flex items-start justify-between pr-6">
+                        <h3 class="font-extrabold text-slate-900 text-base leading-snug">${escapeHtml(ad.title)}</h3>
+                    </div>
+                    
+                    <p class="text-slate-600 text-xs leading-relaxed">${escapeHtml(ad.desc)}</p>
+                    
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 font-medium pt-1 border-t border-slate-100">
+                        <span>👤 ${escapeHtml(ad.author)}</span>
+                        <span>📅 ${ad.date}</span>
+                    </div>
+
+                    <div class="flex gap-2 pt-1">
+                        <a href="tel:${ad.phone}" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="phone" class="w-3.5 h-3.5"></i> Qo'ng'iroq
+                        </a>
+                        <a href="https://yandex.uz/maps/?rtext=~${ad.coords[0]},${ad.coords[1]}" target="_blank" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Yandex Xarita
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function filterAds() {
+            const query = document.getElementById('searchInput').value;
+            loadAds(query);
+        }
+
+        // 7. Admin Panel Funksiyalari
+        function openAdminModal() { document.getElementById('adminModal').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
+
+        function verifyAdmin() {
+            const pass = document.getElementById('adminPassInput').value;
+            if (pass === 'admin123') {
+                isAdmin = true;
+                document.getElementById('adminAuthSection').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                loadAds();
+            } else {
+                alert("Noto'g'ri parol!");
+            }
+        }
+
+        function addBanner() {
+            const url = document.getElementById('newBannerUrl').value;
+            if (!url) return alert("Rasm havolasini kiriting!");
+            
+            let banners = JSON.parse(localStorage.getItem('bayramlar_banners')) || defaultBanners;
+            banners.push({ id: Date.now(), image: url, title: "Yangi Reklama Banti" });
+            localStorage.setItem('bayramlar_banners', JSON.stringify(banners));
+            
+            renderBanners();
+            document.getElementById('newBannerUrl').value = '';
+            alert("Yangi banner joylandi!");
+        }
+
+        function deleteAd(id) {
+            if (confirm("Ushbu e'lonni o'chirib tashlamoqchimisiz?")) {
+                let ads = JSON.parse(localStorage.getItem('bayramlar_ads')) || [];
+                ads = ads.filter(a => a.id !== id);
+                localStorage.setItem('bayramlar_ads', JSON.stringify(ads));
+                loadAds();
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
